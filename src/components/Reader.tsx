@@ -30,6 +30,8 @@ export default function Reader({ initial, onBack }: { initial: BookMeta; onBack:
   const scroller = useRef<HTMLDivElement>(null)
   const chapterText = useRef('')
   const restore = useRef(true)
+  /** 剛載入章節才需要重設捲動位置;修正訊息造成的更新不能動到捲動 */
+  const needScroll = useRef(true)
   const scrollTimer = useRef<number>(0)
 
   const ctxRef = useRef(createContext(meta.characters, meta.typeRules, meta.firstPerson))
@@ -61,6 +63,7 @@ export default function Reader({ initial, onBack }: { initial: BookMeta; onBack:
   useEffect(() => {
     let cancelled = false
     setMessages(null)
+    needScroll.current = true
     void (async () => {
       const data = await ensureParsed(idx, TYPING_DELAY_MS)
       if (cancelled) return
@@ -74,9 +77,10 @@ export default function Reader({ initial, onBack }: { initial: BookMeta; onBack:
   }, [idx, ensureParsed])
 
   useLayoutEffect(() => {
-    if (!messages || !scroller.current) return
+    if (!messages || !scroller.current || !needScroll.current) return
     scroller.current.scrollTop = restore.current ? metaRef.current.progress.scroll : 0
     restore.current = false
+    needScroll.current = false
   }, [messages])
 
   const goto = (i: number) => {

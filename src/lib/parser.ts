@@ -202,7 +202,8 @@ function attribute(segs: Seg[], ctx: ParseContext): Attributed {
     else if (bAttr) [attr, from] = [bAttr, 'before']
 
     // 夾在敘述中的短詞(「赤焰龍」『轉移』):不是台詞,還原成一般文字
-    if (isTermLike(seg.text, seg.open) && !attr?.viaVerb && otherTextLen >= 6) {
+    const namingLead = /(?:是|為|为|叫|稱作|称作|名為|名为|叫做|稱為|称为)$/.test(before.trim())
+    if (isTermLike(seg.text, seg.open) && !attr?.viaVerb && (otherTextLen >= 6 || namingLead)) {
       terms.add(i)
       return
     }

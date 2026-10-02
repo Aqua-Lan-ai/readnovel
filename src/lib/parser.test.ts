@@ -157,3 +157,11 @@ describe('thought detection precision', () => {
     expect(m[m.length - 1]).toMatchObject({ type: 'thought', speaker: '希薇雅' })
   })
 })
+
+describe('naming phrases', () => {
+  it('「這是「嫉妒」」stays one narration, not split', () => {
+    const m = parseChapter('這是「嫉妒」', 0, createContext(['希薇雅']))
+    expect(m).toHaveLength(1)
+    expect(m[0].text).toBe('這是「嫉妒」')
+  })
+})
