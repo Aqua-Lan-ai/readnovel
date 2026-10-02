@@ -3,6 +3,9 @@
   --ink: #1f2430;
   --muted: #6b7280;
   --line: #06c755;
+  /* 自己(靠右)的氣泡:柔和的灰綠底 + 深色字,降低亮度、長時間閱讀不刺眼 */
+  --me-bubble: #b5d8bf;
+  --me-ink: #1c2a21;
   --chat-bg: #8fa6c8;
   --card: #fff;
   color-scheme: light;
@@ -53,7 +56,7 @@ button { font: inherit; cursor: pointer; }
 .row.right .edited { right: auto; left: 4px; }
 
 .bubble { position: relative; padding: .55em .85em; border-radius: 1.1em; background: #fff; word-break: break-word; white-space: pre-wrap; box-shadow: 0 1px 1px rgba(0,0,0,.08); }
-.row.right .bubble.dialog { background: var(--line); color: #fff; }
+.row.right .bubble.dialog { background: var(--me-bubble); color: var(--me-ink); }
 .tag { display: inline-block; font-size: .7em; background: #fde68a; color: #7a5b00; border-radius: 6px; padding: 0 5px; margin-right: 6px; vertical-align: 1px; }
 .bubble.unknown { background: #eceff3; border: 1px dashed #8b95a5; box-shadow: none; }
 
@@ -62,7 +65,7 @@ button { font: inherit; cursor: pointer; }
 .bubble.thought::before, .bubble.thought::after { content: ""; position: absolute; border-radius: 50%; background: rgba(255,255,255,.62); border: 1.5px solid rgba(60,70,90,.4); }
 .bubble.thought::before { width: 10px; height: 10px; left: -4px; bottom: -10px; }
 .bubble.thought::after { width: 6px; height: 6px; left: -10px; bottom: -18px; }
-.row.right .bubble.thought { background: rgba(214,255,226,.7); }
+.row.right .bubble.thought { background: rgba(214,235,220,.72); }
 .row.right .bubble.thought::before { left: auto; right: -4px; }
 .row.right .bubble.thought::after { left: auto; right: -10px; }
 .row.left:has(.thought), .row.right:has(.thought) { margin-bottom: 14px; }
@@ -71,7 +74,7 @@ button { font: inherit; cursor: pointer; }
 .bubble.shout { position: relative; isolation: isolate; background: transparent; box-shadow: none; border-radius: 0; margin: 14px 12px; padding: .8em 1.2em; color: #161616; font-weight: 900; font-size: 1.15em; letter-spacing: .02em; overflow: visible; }
 .bubble.shout .burst { position: absolute; z-index: -1; overflow: visible; pointer-events: none; filter: drop-shadow(2px 3px 0 rgba(0,0,0,.28)); }
 .bubble.shout .burst polygon { fill: #fff3a6; stroke: #161616; stroke-width: 3; stroke-linejoin: miter; stroke-miterlimit: 8; }
-.row.right .bubble.shout .burst polygon { fill: #b8ffd0; }
+.row.right .bubble.shout .burst polygon { fill: #cfe9d6; }
 .shout-text { position: relative; }
 
 /* 旁白 */
