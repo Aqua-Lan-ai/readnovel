@@ -168,6 +168,21 @@ export default function Reader({ initial, onBack }: { initial: BookMeta; onBack:
     await afterCharacterOp(r.meta, `已刪除「${name}」(${r.affected} 則變成未知角色)`)
   }
 
+  /** 把這則旁白併入上一則旁白(同一段被切開時用) */
+  const mergeWithPrev = () => {
+    if (!messages || !fixing) return
+    const i = messages.findIndex((m) => m.id === fixing.id)
+    const prev = messages[i - 1]
+    if (!prev || !isNarration(prev) || prev.type === 'image') return
+    const text = `${prev.text}\n${fixing.text}`
+    const merged: Message = { ...prev, text, type: text.length > 40 ? 'narration_long' : 'narration_short', edited: true }
+    const next = [...messages.slice(0, i - 1), merged, ...messages.slice(i + 1)]
+    setMessages(next)
+    void putChapter(meta.id, idx, { text: chapterText.current, messages: next })
+    setFixId(null)
+    showToast('已合併成同一段旁白')
+  }
+
   const changeFont = (d: number) => {
     const n = Math.min(26, Math.max(12, fontSize + d))
     setFontSize(n)
@@ -227,6 +242,12 @@ export default function Reader({ initial, onBack }: { initial: BookMeta; onBack:
           onSetMe={(name) => updateMeta((m) => ({ ...m, me: name }))}
           onClose={() => setFixId(null)}
           onManage={() => (setFixId(null), setCharsOpen(true))}
+          canMergePrev={(() => {
+            const i = messages!.findIndex((m) => m.id === fixing.id)
+            const prev = messages![i - 1]
+            return !!prev && isNarration(prev) && prev.type !== 'image'
+          })()}
+          onMergePrev={mergeWithPrev}
         />
       )}
 

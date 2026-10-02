@@ -165,3 +165,17 @@ describe('naming phrases', () => {
     expect(m[0].text).toBe('這是「嫉妒」')
   })
 })
+
+describe('one paragraph, one narration style', () => {
+  const ctx = createContext(['希薇雅'])
+  it('pieces split by a quote share the same narration type', () => {
+    const long = '他走進昏暗的房間，看見桌上放著一封已經泛黃的信，信封邊角破損，顯然放了很久很久。'
+    const m = parseChapter(`${long}「這是什麼？」然後離開。`, 0, ctx)
+    const narr = m.filter((x) => x.type === 'narration_short' || x.type === 'narration_long')
+    expect(narr.length).toBeGreaterThanOrEqual(2)
+    expect(new Set(narr.map((x) => x.type)).size).toBe(1)
+  })
+  it('a short standalone paragraph is still the short style', () => {
+    expect(parseChapter('天亮了。', 0, ctx)[0].type).toBe('narration_short')
+  })
+})

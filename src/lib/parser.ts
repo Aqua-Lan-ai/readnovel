@@ -230,7 +230,22 @@ function attribute(segs: Seg[], ctx: ParseContext): Attributed {
   return { quoteMsgs, consumed, terms }
 }
 
+/**
+ * 同一段被引號/想法切開的旁白,樣式要一致:
+ * 用「整段旁白的總字數」決定是置中小字(短)還是整幅卡片(長),而不是各自判斷。
+ */
+function unifyNarration(msgs: Raw[]): Raw[] {
+  const pieces = msgs.filter((m) => isNarr(m) && !m.scene)
+  if (pieces.length < 2) return msgs
+  const type = narrationType(pieces.map((m) => m.text).join(''))
+  return msgs.map((m) => (isNarr(m) && !m.scene ? { ...m, type } : m))
+}
+
 function parseParagraph(para: string, ctx: ParseContext): Raw[] {
+  return unifyNarration(parseParagraphRaw(para, ctx))
+}
+
+function parseParagraphRaw(para: string, ctx: ParseContext): Raw[] {
   const img = IMG_MARK.exec(para)
   if (img) return [{ type: 'image', speaker: null, text: img[1] }]
   if (SCENE_BREAK.test(para)) return [{ type: 'narration_short', speaker: null, text: para.replace(/\s+/g, ' '), scene: true }]

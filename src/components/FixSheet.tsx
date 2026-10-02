@@ -10,22 +10,23 @@ interface Props {
   onSetMe: (name: string) => void
   onClose: () => void
   onManage: () => void
+  /** 上一則也是旁白時,可合併成同一段 */
+  canMergePrev: boolean
+  onMergePrev: () => void
 }
 
 const TYPES: { label: string; type: MsgType }[] = [
   { label: '一般對話', type: 'dialog' },
   { label: '內心想法', type: 'thought' },
   { label: '大喊', type: 'shout' },
-  { label: '旁白', type: 'narration_short' },
+  { label: '旁白(段落)', type: 'narration_long' },
+  { label: '旁白(短句)', type: 'narration_short' },
 ]
 
-export default function FixSheet({ msg, characters, me, onChange, onSetMe, onClose, onManage }: Props) {
+export default function FixSheet({ msg, characters, me, onChange, onSetMe, onClose, onManage, canMergePrev, onMergePrev }: Props) {
   const [newName, setNewName] = useState('')
   const isNarration = msg.type === 'narration_short' || msg.type === 'narration_long'
-  const activeType = isNarration ? 'narration_short' : msg.type
-
-  const pickType = (type: MsgType) =>
-    onChange({ type: type === 'narration_short' ? (msg.text.length > 40 ? 'narration_long' : 'narration_short') : type })
+  const pickType = (type: MsgType) => onChange({ type })
 
   const addCharacter = () => {
     const n = newName.trim()
@@ -40,11 +41,15 @@ export default function FixSheet({ msg, characters, me, onChange, onSetMe, onClo
         <h3>訊息類型</h3>
         <div className="chips">
           {TYPES.map((t) => (
-            <button key={t.type} className={`chip ${activeType === t.type ? 'on' : ''}`} onClick={() => pickType(t.type)}>
+            <button key={t.type} className={`chip ${msg.type === t.type ? 'on' : ''}`} onClick={() => pickType(t.type)}>
               {t.label}
             </button>
           ))}
         </div>
+
+        {isNarration && canMergePrev && (
+          <button className="link" onClick={onMergePrev}>與上一則旁白合併成同一段</button>
+        )}
 
         {!isNarration && (
           <>
