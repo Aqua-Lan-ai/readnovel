@@ -6,6 +6,8 @@ export interface ParseContext {
   names: string[]
   typeRules: TypeRule[]
   firstPerson: boolean
+  /** 原文寫法 → 顯示名稱 */
+  aliases: Record<string, string>
   /** 比對說話標註用(第一人稱時含「我」) */
   nameRe: RegExp | null
   /** 推測說話者用(不含「我」,否則每段旁白都會命中) */
@@ -15,8 +17,13 @@ export interface ParseContext {
   weakThoughtRe: RegExp
 }
 
-export function createContext(allNames: string[], typeRules: TypeRule[] = [], firstPerson = false): ParseContext {
-  const names = allNames.filter((n) => n !== '我')
+export function createContext(
+  allNames: string[],
+  typeRules: TypeRule[] = [],
+  firstPerson = false,
+  aliases: Record<string, string> = {},
+): ParseContext {
+  const names = [...new Set([...allNames, ...Object.keys(aliases)])].filter((n) => n !== '我')
   const nameAlt = alt(names)
   const verbs = alt(THOUGHT_VERBS.filter((v) => v !== '想'))
   const mods = alt(MODIFIERS)
@@ -24,6 +31,7 @@ export function createContext(allNames: string[], typeRules: TypeRule[] = [], fi
     names,
     typeRules,
     firstPerson,
+    aliases,
     nameRe: names.length || firstPerson ? new RegExp(firstPerson ? alt([...names, '我']) : nameAlt, 'g') : null,
     inferRe: names.length ? new RegExp(nameAlt, 'g') : null,
     thoughtRe: new RegExp(`(${names.length ? nameAlt : '(?!)'})?(?:${mods})*(${verbs})[，,：:]?(.{2,})$`),
@@ -518,5 +526,9 @@ export function parseChapter(text: string, chapterIndex: number, ctx: ParseConte
   for (const para of toParagraphs(text)) raw.push(...applyTypeRules(parseParagraph(para, ctx), ctx))
   const merged = attributeFromNarration(mergeNarration(raw), ctx)
   inferSpeakers(merged, ctx)
-  return merged.map(({ quote: _q, explicit: _e, scene: _s, ...m }, i) => ({ ...m, id: `${chapterIndex}-${i}` }))
+  return merged.map(({ quote: _q, explicit: _e, scene: _s, ...m }, i) => ({
+    ...m,
+    speaker: m.speaker !== null ? (ctx.aliases[m.speaker] ?? m.speaker) : null,
+    id: `${chapterIndex}-${i}`,
+  }))
 }

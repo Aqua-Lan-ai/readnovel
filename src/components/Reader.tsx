@@ -4,6 +4,8 @@ import { applyRuleToMessages, createContext, parseChapter, reinferFrom, rulePref
 import { getChapter, putChapter, putMeta } from '../lib/storage'
 import type { BookMeta, ChapterData, Message, TypeRule } from '../lib/types'
 import Bubble, { TypingIndicator } from './Bubble'
+import { deleteCharacter, renameCharacter } from '../lib/characterOps'
+import CharacterSheet from './CharacterSheet'
 import FixSheet from './FixSheet'
 
 const TYPING_DELAY_MS = 450
@@ -26,6 +28,7 @@ export default function Reader({ initial, onBack }: { initial: BookMeta; onBack:
   const [fixId, setFixId] = useState<string | null>(null)
   const [tocOpen, setTocOpen] = useState(false)
   const [toast, setToast] = useState('')
+  const [charsOpen, setCharsOpen] = useState(false)
   const [fontSize, setFontSize] = useState(loadFontSize)
   const scroller = useRef<HTMLDivElement>(null)
   const chapterText = useRef('')
@@ -34,8 +37,8 @@ export default function Reader({ initial, onBack }: { initial: BookMeta; onBack:
   const needScroll = useRef(true)
   const scrollTimer = useRef<number>(0)
 
-  const ctxRef = useRef(createContext(meta.characters, meta.typeRules, meta.firstPerson))
-  useEffect(() => void (ctxRef.current = createContext(meta.characters, meta.typeRules, meta.firstPerson)), [meta.characters, meta.typeRules, meta.firstPerson])
+  const ctxRef = useRef(createContext(meta.characters, meta.typeRules, meta.firstPerson, meta.aliases))
+  useEffect(() => void (ctxRef.current = createContext(meta.characters, meta.typeRules, meta.firstPerson, meta.aliases)), [meta.characters, meta.typeRules, meta.firstPerson, meta.aliases])
 
   const showToast = (text: string) => {
     setToast(text)
@@ -146,6 +149,25 @@ export default function Reader({ initial, onBack }: { initial: BookMeta; onBack:
     if (rule) setFixId(null)
   }
 
+  /** 角色改名/合併/刪除後:更新 meta,並重新讀取當前章節(不動捲動位置) */
+  const afterCharacterOp = async (next: BookMeta, note: string) => {
+    metaRef.current = next
+    setMeta(next)
+    const data = await getChapter(next.id, idx)
+    if (data?.messages) setMessages(data.messages)
+    showToast(note)
+  }
+
+  const renameChar = async (from: string, to: string) => {
+    const r = await renameCharacter(metaRef.current, from, to)
+    await afterCharacterOp(r.meta, r.merged ? `已把「${from}」合併進「${to.trim()}」(${r.affected} 則)` : `已改名為「${to.trim()}」(${r.affected} 則)`)
+  }
+
+  const deleteChar = async (name: string) => {
+    const r = await deleteCharacter(metaRef.current, name)
+    await afterCharacterOp(r.meta, `已刪除「${name}」(${r.affected} 則變成未知角色)`)
+  }
+
   const changeFont = (d: number) => {
     const n = Math.min(26, Math.max(12, fontSize + d))
     setFontSize(n)
@@ -168,6 +190,7 @@ export default function Reader({ initial, onBack }: { initial: BookMeta; onBack:
         </div>
         <button className="icon-btn" onClick={() => changeFont(-1)} aria-label="縮小字體">A−</button>
         <button className="icon-btn" onClick={() => changeFont(1)} aria-label="放大字體">A+</button>
+        <button className="icon-btn" onClick={() => setCharsOpen(true)} aria-label="角色管理">角色</button>
         <button className="icon-btn" onClick={() => setTocOpen(true)} aria-label="目錄">☰</button>
         <button className="icon-btn" onClick={() => void exportBook(meta)} aria-label="匯出解析檔">⤓</button>
       </header>
@@ -203,6 +226,17 @@ export default function Reader({ initial, onBack }: { initial: BookMeta; onBack:
           onChange={applyFix}
           onSetMe={(name) => updateMeta((m) => ({ ...m, me: name }))}
           onClose={() => setFixId(null)}
+          onManage={() => (setFixId(null), setCharsOpen(true))}
+        />
+      )}
+
+      {charsOpen && (
+        <CharacterSheet
+          characters={meta.characters}
+          me={meta.me}
+          onRename={renameChar}
+          onDelete={deleteChar}
+          onClose={() => setCharsOpen(false)}
         />
       )}
 

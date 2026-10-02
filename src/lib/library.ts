@@ -9,7 +9,7 @@ const EXPORT_FORMAT = 'dialogue-novel-reader'
 interface ExportFile {
   format: typeof EXPORT_FORMAT
   version: 1
-  book: { title: string; characters: string[]; me: string | null; typeRules?: TypeRule[]; firstPerson?: boolean }
+  book: { title: string; characters: string[]; me: string | null; typeRules?: TypeRule[]; firstPerson?: boolean; aliases?: Record<string, string> }
   chapters: { index: number; title: string; text?: string; messages?: Message[] }[]
   images?: { path: string; dataUrl: string }[]
   corrections: Correction[]
@@ -73,6 +73,7 @@ async function importJson(data: ExportFile): Promise<BookMeta> {
     me: data.book.me,
     typeRules: data.book.typeRules,
     firstPerson: data.book.firstPerson,
+    aliases: data.book.aliases,
     progress: { chapter: 0, scroll: 0 },
     corrections: data.corrections ?? [],
   }
@@ -104,7 +105,7 @@ export async function exportBook(meta: BookMeta): Promise<void> {
   const file: ExportFile = {
     format: EXPORT_FORMAT,
     version: 1,
-    book: { title: meta.title, characters: meta.characters, me: meta.me, typeRules: meta.typeRules, firstPerson: meta.firstPerson },
+    book: { title: meta.title, characters: meta.characters, me: meta.me, typeRules: meta.typeRules, firstPerson: meta.firstPerson, aliases: meta.aliases },
     chapters,
     corrections: meta.corrections,
     images,

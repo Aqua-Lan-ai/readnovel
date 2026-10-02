@@ -9,6 +9,7 @@ interface Props {
   onChange: (patch: Partial<Pick<Message, 'type' | 'speaker' | 'guess'>>) => void
   onSetMe: (name: string) => void
   onClose: () => void
+  onManage: () => void
 }
 
 const TYPES: { label: string; type: MsgType }[] = [
@@ -18,7 +19,7 @@ const TYPES: { label: string; type: MsgType }[] = [
   { label: '旁白', type: 'narration_short' },
 ]
 
-export default function FixSheet({ msg, characters, me, onChange, onSetMe, onClose }: Props) {
+export default function FixSheet({ msg, characters, me, onChange, onSetMe, onClose, onManage }: Props) {
   const [newName, setNewName] = useState('')
   const isNarration = msg.type === 'narration_short' || msg.type === 'narration_long'
   const activeType = isNarration ? 'narration_short' : msg.type
@@ -70,6 +71,7 @@ export default function FixSheet({ msg, characters, me, onChange, onSetMe, onClo
               />
               <button onClick={addCharacter}>新增</button>
             </div>
+            <button className="link" onClick={onManage}>管理角色(改名/刪除)</button>
             {msg.speaker && msg.speaker !== me && (
               <button className="link" onClick={() => onSetMe(msg.speaker!)}>
                 以「{msg.speaker}」為主視角(訊息靠右)

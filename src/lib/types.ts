@@ -40,6 +40,16 @@ export interface BookMeta {
   typeRules?: TypeRule[]
   /** 第一人稱敘事(「我」是說話者之一) */
   firstPerson?: boolean
+  /** 改名後的對照:原文中的寫法 → 顯示名稱,讓之後才解析的章節也能套用 */
+  aliases?: Record<string, string>
+  characterOps?: CharacterOp[]
+}
+
+export interface CharacterOp {
+  op: 'rename' | 'merge' | 'delete'
+  from: string
+  to?: string
+  at: number
 }
 
 export interface ChapterData {

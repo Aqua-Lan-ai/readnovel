@@ -23,10 +23,10 @@ button { font: inherit; cursor: pointer; }
 .drop span { color: var(--muted); font-size: 14px; }
 .drop.over { border-color: var(--line); background: #effcf4; }
 .error { color: #c0392b; }
-.books { list-style: none; padding: 0; margin: 0; display: grid; gap: 8px; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); }
+.books { list-style: none; padding: 0; margin: 0; display: grid; gap: 8px; grid-template-columns: minmax(0, 1fr); }
 .books li { display: flex; gap: 8px; align-items: stretch; }
-.book { flex: 1; text-align: left; background: var(--card); border: 0; border-radius: 12px; padding: 12px 14px; display: flex; flex-direction: column; box-shadow: 0 1px 2px rgba(0,0,0,.06); }
-.book-title { font-weight: 600; }
+.book { flex: 1; min-width: 0; text-align: left; background: var(--card); border: 0; border-radius: 12px; padding: 12px 14px; display: flex; flex-direction: column; box-shadow: 0 1px 2px rgba(0,0,0,.06); }
+.book-title { font-weight: 600; overflow-wrap: anywhere; }
 .book-sub { color: var(--muted); font-size: 13px; }
 .icon-btn { background: none; border: 0; color: inherit; padding: 6px 9px; border-radius: 8px; font-size: 15px; }
 .icon-btn:hover { background: rgba(0,0,0,.06); }
@@ -122,6 +122,9 @@ button { font: inherit; cursor: pointer; }
 .row.head { margin-top: 10px; }
 
 /* ---------- responsive ---------- */
+@media (min-width: 900px) {
+  .books { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
 @media (min-width: 640px) {
   .library { padding: 56px 32px; }
   .col { max-width: 70%; }
@@ -140,3 +143,15 @@ button { font: inherit; cursor: pointer; }
 @media (prefers-reduced-motion: reduce) {
   .spinner, .typing span, .bar.indeterminate i { animation-duration: 3s; }
 }
+
+.muted { color: var(--muted); font-size: 13px; margin: 0 0 8px; }
+.char-list { list-style: none; margin: 0; padding: 0; }
+.char-list li { display: flex; align-items: center; gap: 8px; padding: 7px 0; border-bottom: 1px solid #eef0f3; }
+.char-list .dot { flex: none; width: 26px; height: 26px; font-size: 13px; }
+.char-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.char-name em { font-style: normal; font-size: 11px; background: #e8faee; color: #0b7a3b; border-radius: 6px; padding: 0 6px; margin-left: 6px; }
+.char-list input { flex: 1; min-width: 0; border: 1px solid #cfd5de; border-radius: 8px; padding: 6px 8px; font: inherit; }
+.mini { background: #f1f3f6; border: 0; border-radius: 8px; padding: 5px 10px; font-size: 13px; }
+.mini.ok { background: var(--line); color: #fff; }
+.mini.danger { color: #c0392b; }
+.mini:disabled { opacity: .5; }
