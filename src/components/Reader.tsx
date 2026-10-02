@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { exportBook } from '../lib/library'
-import { applyRuleToMessages, createContext, parseChapter, reinferFrom, rulePrefix } from '../lib/parser'
+import { applyRuleToMessages, createContext, mergeAdjacentNarration, parseChapter, reinferFrom, rulePrefix } from '../lib/parser'
 import { getChapter, putChapter, putMeta } from '../lib/storage'
-import type { BookMeta, ChapterData, Message, TypeRule } from '../lib/types'
+import type { BookMeta, ChapterData, Message, MsgType, TypeRule } from '../lib/types'
 import Bubble, { TypingIndicator } from './Bubble'
 import { deleteCharacter, renameCharacter } from '../lib/characterOps'
 import CharacterSheet from './CharacterSheet'
@@ -71,7 +71,10 @@ export default function Reader({ initial, onBack }: { initial: BookMeta; onBack:
       const data = await ensureParsed(idx, TYPING_DELAY_MS)
       if (cancelled) return
       chapterText.current = data.text
-      setMessages(data.messages!)
+      // 連續的旁白併成一塊(舊資料也會被整理並存回)
+      const tidy = mergeAdjacentNarration(data.messages!)
+      if (tidy !== data.messages) void putChapter(metaRef.current.id, idx, { ...data, messages: tidy })
+      setMessages(tidy)
       if (idx + 1 < metaRef.current.chapterTitles.length) setTimeout(() => void ensureParsed(idx + 1), 200)
     })()
     return () => {
@@ -127,6 +130,7 @@ export default function Reader({ initial, onBack }: { initial: BookMeta; onBack:
       notes.push(`已學會:「${prefix}」開頭的旁白都當作${patch.type === 'thought' ? '內心想法' : '此類型'}`)
     }
 
+    next = mergeAdjacentNarration(next)
     setMessages(next)
     void putChapter(meta.id, idx, { text: chapterText.current, messages: next })
     updateMeta((m) => ({
@@ -166,6 +170,43 @@ export default function Reader({ initial, onBack }: { initial: BookMeta; onBack:
   const deleteChar = async (name: string) => {
     const r = await deleteCharacter(metaRef.current, name)
     await afterCharacterOp(r.meta, `已刪除「${name}」(${r.affected} 則變成未知角色)`)
+  }
+
+  /** 旁白裡選取的一段 → 拆成獨立訊息(對話/想法/大喊/獨立短句),前後文字仍是旁白 */
+  const splitSelection = (start: number, end: number, type: MsgType, speaker: string | null) => {
+    if (!messages || !fixing) return
+    const i = messages.findIndex((m) => m.id === fixing.id)
+    const text = fixing.text
+    const before = text.slice(0, start).trim()
+    const after = text.slice(end).trim()
+    const selected = text.slice(start, end).trim().replace(/^[「『“"]([\s\S]*)[」』”"]$/, '$1').trim()
+    if (!selected) return
+
+    const narr = (t: string): Message => ({ id: '', type: t.length > 40 ? 'narration_long' : 'narration_short', speaker: null, text: t })
+    const isNarr = type === 'narration_short'
+    const picked: Message = { id: '', type, speaker: isNarr ? null : speaker, text: selected, edited: true, guess: false, ...(isNarr ? { solo: true } : {}) }
+    const pieces = [...(before ? [narr(before)] : []), picked, ...(after ? [narr(after)] : [])]
+    const pickedAt = i + (before ? 1 : 0)
+    let next = [...messages.slice(0, i), ...pieces, ...messages.slice(i + 1)].map((m, n) => ({ ...m, id: `${idx}-${n}` }))
+
+    const notes = ['已拆出選取的句子']
+    if (!isNarr && speaker) {
+      next = next.map((m) => ({ ...m }))
+      const changed = reinferFrom(next, ctxRef.current, pickedAt)
+      if (changed) notes.push(`並重新推測後面 ${changed} 則`)
+    }
+    setMessages(next)
+    void putChapter(meta.id, idx, { text: chapterText.current, messages: next })
+    updateMeta((m) => ({
+      ...m,
+      characters: !isNarr && speaker && !m.characters.includes(speaker) ? [...m.characters, speaker] : m.characters,
+      corrections: [
+        ...m.corrections,
+        { chapter: idx, messageId: fixing.id, text: selected, from: { type: fixing.type, speaker: null }, to: { type, speaker: picked.speaker }, at: Date.now() },
+      ],
+    }))
+    setFixId(null)
+    showToast(notes.join(','))
   }
 
   /** 把這則旁白併入上一則旁白(同一段被切開時用) */
@@ -248,6 +289,7 @@ export default function Reader({ initial, onBack }: { initial: BookMeta; onBack:
             return !!prev && isNarration(prev) && prev.type !== 'image'
           })()}
           onMergePrev={mergeWithPrev}
+          onSplit={splitSelection}
         />
       )}
 

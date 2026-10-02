@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { BURST_AMP, burstPoints } from '../lib/burst'
 import { getImage } from '../lib/storage'
 import { avatarColor, avatarLetter } from '../lib/color'
 import type { Message } from '../lib/types'
@@ -47,6 +48,37 @@ function Illustration({ bookId, path }: { bookId: string; path: string }) {
   return url ? <img className="illust" src={url} alt="插圖" /> : <div className="illust ph" />
 }
 
+/** 漫畫爆炸框:依氣泡實際大小動態畫刺,放在文字後面 */
+function ShoutBubble({ msg }: { msg: Message }) {
+  const box = useRef<HTMLDivElement>(null)
+  const [size, setSize] = useState<{ w: number; h: number } | null>(null)
+  useEffect(() => {
+    const el = box.current
+    if (!el) return
+    const measure = () => setSize({ w: el.offsetWidth, h: el.offsetHeight })
+    measure()
+    const ro = new ResizeObserver(measure)
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [])
+  return (
+    <div className="bubble shout" ref={box}>
+      {size && (
+        <svg
+          className="burst"
+          width={size.w + BURST_AMP * 2}
+          height={size.h + BURST_AMP * 2}
+          style={{ left: -BURST_AMP, top: -BURST_AMP }}
+          aria-hidden
+        >
+          <polygon points={burstPoints(size.w, size.h, msg.id)} />
+        </svg>
+      )}
+      <span className="shout-text">{msg.text}</span>
+    </div>
+  )
+}
+
 export default function Bubble({ bookId, msg, right, onLongPress }: Props) {
   const press = useLongPress(() => onLongPress(msg))
   const edited = msg.edited ? <i className="edited" title="已修正" /> : null
@@ -77,10 +109,14 @@ export default function Bubble({ bookId, msg, right, onLongPress }: Props) {
       {!right && <Avatar name={msg.speaker} />}
       <div className="col">
         <div className="name">{name}</div>
-        <div className={`bubble ${msg.type}`}>
-          {msg.type === 'unknown' && <span className="tag">待確認</span>}
-          {msg.text}
-        </div>
+        {msg.type === 'shout' ? (
+          <ShoutBubble msg={msg} />
+        ) : (
+          <div className={`bubble ${msg.type}`}>
+            {msg.type === 'unknown' && <span className="tag">待確認</span>}
+            {msg.text}
+          </div>
+        )}
       </div>
       {right && <Avatar name={msg.speaker} />}
       {edited}

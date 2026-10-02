@@ -67,9 +67,12 @@ button { font: inherit; cursor: pointer; }
 .row.right .bubble.thought::after { left: auto; right: -10px; }
 .row.left:has(.thought), .row.right:has(.thought) { margin-bottom: 14px; }
 
-/* 大喊:鋸齒爆炸框 */
-.bubble.shout { color: #fff; font-weight: 800; font-size: 1.2em; padding: .9em 1.3em; border-radius: 0; background: radial-gradient(circle at 50% 40%, #ff9a3c, #e8321e); text-shadow: 0 1px 2px rgba(0,0,0,.35); box-shadow: none;
-  clip-path: polygon(0 12%, 5% 0, 12% 10%, 22% 0, 32% 9%, 44% 0, 55% 10%, 66% 0, 77% 9%, 88% 0, 95% 10%, 100% 22%, 96% 36%, 100% 50%, 95% 64%, 100% 78%, 95% 90%, 100% 100%, 88% 92%, 77% 100%, 66% 91%, 55% 100%, 44% 91%, 32% 100%, 22% 92%, 12% 100%, 5% 91%, 0 100%, 4% 78%, 0 64%, 5% 50%, 0 36%, 4% 22%); }
+/* 大喊:漫畫爆炸框(刺由 Bubble.tsx 的 SVG 依大小動態畫出) */
+.bubble.shout { position: relative; isolation: isolate; background: transparent; box-shadow: none; border-radius: 0; margin: 14px 12px; padding: .8em 1.2em; color: #161616; font-weight: 900; font-size: 1.15em; letter-spacing: .02em; overflow: visible; }
+.bubble.shout .burst { position: absolute; z-index: -1; overflow: visible; pointer-events: none; filter: drop-shadow(2px 3px 0 rgba(0,0,0,.28)); }
+.bubble.shout .burst polygon { fill: #fff3a6; stroke: #161616; stroke-width: 3; stroke-linejoin: miter; stroke-miterlimit: 8; }
+.row.right .bubble.shout .burst polygon { fill: #b8ffd0; }
+.shout-text { position: relative; }
 
 /* 旁白 */
 .sys { background: rgba(0,0,0,.28); color: #fff; font-size: .8em; padding: 2px 12px; border-radius: 999px; max-width: 86%; text-align: center; }
@@ -155,3 +158,8 @@ button { font: inherit; cursor: pointer; }
 .mini.ok { background: var(--line); color: #fff; }
 .mini.danger { color: #c0392b; }
 .mini:disabled { opacity: .5; }
+
+.segs { display: flex; flex-direction: column; gap: 4px; max-height: 32vh; max-height: 32dvh; overflow-y: auto; border: 1px solid #e3e6ea; border-radius: 10px; padding: 6px; }
+.seg { text-align: left; background: #f6f7f9; border: 1.5px solid transparent; border-radius: 8px; padding: 6px 10px; line-height: 1.5; }
+.seg.on { background: #e8faee; border-color: var(--line); }
+.split-panel { border-top: 1px dashed #d5dae1; margin-top: 10px; }

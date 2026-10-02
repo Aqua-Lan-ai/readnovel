@@ -1,6 +1,7 @@
+import type { Message } from './types'
 import { describe, expect, it } from 'vitest'
 import { detectCharacters } from './characters'
-import { applyRuleToMessages, createContext, parseChapter, reinferFrom, rulePrefix } from './parser'
+import { applyRuleToMessages, createContext, mergeAdjacentNarration, parseChapter, reinferFrom, rulePrefix } from './parser'
 import { splitChapters } from './chapters'
 
 const sample = `第一章 雨夜
@@ -177,5 +178,35 @@ describe('one paragraph, one narration style', () => {
   })
   it('a short standalone paragraph is still the short style', () => {
     expect(parseChapter('天亮了。', 0, ctx)[0].type).toBe('narration_short')
+  })
+})
+
+describe('adjacent narration always merges', () => {
+  const m = (id: string, type: Message['type'], text: string): Message => ({ id, type, speaker: null, text })
+  it('no length cap: a long run of narration lines becomes one message', () => {
+    const text = Array.from({ length: 80 }, (_, i) => `這是第${i}行旁白，內容有點長。`).join('\n')
+    expect(parseChapter(text, 0, createContext([]))).toHaveLength(1)
+  })
+  it('merges stored adjacent narrations (old data / manual edits) into one', () => {
+    const out = mergeAdjacentNarration([m('a', 'narration_long', '很長'.repeat(30)), m('b', 'narration_short', '短句'), m('c', 'narration_short', '又一句')])
+    expect(out).toHaveLength(1)
+    expect(out[0].text.split('\n')).toHaveLength(3)
+    expect(out[0].type).toBe('narration_long')
+  })
+  it('does not merge across dialogue, images or scene breaks', () => {
+    const out = mergeAdjacentNarration([
+      m('a', 'narration_short', '甲'),
+      m('b', 'dialog', '對話'),
+      m('c', 'narration_short', '乙'),
+      m('d', 'image', 'x.jpg'),
+      m('e', 'narration_short', '丙'),
+      m('f', 'narration_short', '＊'),
+      m('g', 'narration_short', '丁'),
+    ])
+    expect(out.map((x) => x.id)).toEqual(['a', 'b', 'c', 'd', 'e', 'f', 'g'])
+  })
+  it('returns the same array when nothing needs merging', () => {
+    const arr = [m('a', 'narration_short', '甲'), m('b', 'dialog', '對話')]
+    expect(mergeAdjacentNarration(arr)).toBe(arr)
   })
 })

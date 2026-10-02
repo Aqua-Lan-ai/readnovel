@@ -1,5 +1,6 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { avatarColor, avatarLetter } from '../lib/color'
+import { splitSegments } from '../lib/segments'
 import type { Message, MsgType } from '../lib/types'
 
 interface Props {
@@ -13,6 +14,8 @@ interface Props {
   /** 上一則也是旁白時,可合併成同一段 */
   canMergePrev: boolean
   onMergePrev: () => void
+  /** 把旁白中選取的一段(字元範圍)拆出來,變成指定類型/角色 */
+  onSplit: (start: number, end: number, type: MsgType, speaker: string | null) => void
 }
 
 const TYPES: { label: string; type: MsgType }[] = [
@@ -23,10 +26,35 @@ const TYPES: { label: string; type: MsgType }[] = [
   { label: '旁白(短句)', type: 'narration_short' },
 ]
 
-export default function FixSheet({ msg, characters, me, onChange, onSetMe, onClose, onManage, canMergePrev, onMergePrev }: Props) {
+export default function FixSheet({ msg, characters, me, onChange, onSetMe, onClose, onManage, canMergePrev, onMergePrev, onSplit }: Props) {
   const [newName, setNewName] = useState('')
+  const [anchor, setAnchor] = useState<number | null>(null)
+  const [sel, setSel] = useState<[number, number] | null>(null)
+  const [selType, setSelType] = useState<MsgType>('dialog')
+  const [selSpeaker, setSelSpeaker] = useState<string | null>(null)
+  const [selNew, setSelNew] = useState('')
   const isNarration = msg.type === 'narration_short' || msg.type === 'narration_long'
   const pickType = (type: MsgType) => onChange({ type })
+  const segments = useMemo(() => (isNarration ? splitSegments(msg.text) : []), [isNarration, msg.text])
+
+  const tapSegment = (i: number) => {
+    if (anchor === null || sel === null) {
+      setAnchor(i)
+      setSel([i, i])
+    } else if (sel[0] === sel[1] && sel[0] === i) {
+      setAnchor(null)
+      setSel(null)
+    } else {
+      setSel([Math.min(anchor, i), Math.max(anchor, i)])
+    }
+  }
+
+  const isNarrationTarget = selType === 'narration_short'
+  const applySplit = () => {
+    if (!sel) return
+    const typed = selNew.trim()
+    onSplit(segments[sel[0]].start, segments[sel[1]].end, selType, isNarrationTarget ? null : typed || selSpeaker)
+  }
 
   const addCharacter = () => {
     const n = newName.trim()
@@ -46,6 +74,53 @@ export default function FixSheet({ msg, characters, me, onChange, onSetMe, onClo
             </button>
           ))}
         </div>
+
+        {isNarration && segments.length > 0 && (
+          <>
+            <h3>拆出其中的句子{segments.length > 1 ? '(點選句子,可連續選多句)' : ''}</h3>
+            <div className="segs">
+              {segments.map((s, i) => (
+                <button key={s.start} className={`seg ${sel && i >= sel[0] && i <= sel[1] ? 'on' : ''}`} onClick={() => tapSegment(i)}>
+                  {s.text}
+                </button>
+              ))}
+            </div>
+            {sel && (
+              <div className="split-panel">
+                <h3>選取的句子變成</h3>
+                <div className="chips">
+                  {TYPES.filter((t) => t.type !== 'narration_long').map((t) => (
+                    <button key={t.type} className={`chip ${selType === t.type ? 'on' : ''}`} onClick={() => setSelType(t.type)}>
+                      {t.type === 'narration_short' ? '獨立一行短句' : t.label}
+                    </button>
+                  ))}
+                </div>
+                {!isNarrationTarget && (
+                  <>
+                    <h3>誰說的</h3>
+                    <div className="chips">
+                      <button className={`chip ${selSpeaker === null && !selNew.trim() ? 'on' : ''}`} onClick={() => (setSelSpeaker(null), setSelNew(''))}>
+                        未知
+                      </button>
+                      {characters.map((c) => (
+                        <button key={c} className={`chip ${selSpeaker === c && !selNew.trim() ? 'on' : ''}`} onClick={() => (setSelSpeaker(c), setSelNew(''))}>
+                          <span className="dot" style={{ background: avatarColor(c) }}>
+                            {avatarLetter(c)}
+                          </span>
+                          {c}
+                        </button>
+                      ))}
+                    </div>
+                    <div className="add">
+                      <input value={selNew} placeholder="或輸入新角色名…" onChange={(e) => setSelNew(e.target.value)} />
+                    </div>
+                  </>
+                )}
+                <button className="done" onClick={applySplit}>套用拆分</button>
+              </div>
+            )}
+          </>
+        )}
 
         {isNarration && canMergePrev && (
           <button className="link" onClick={onMergePrev}>與上一則旁白合併成同一段</button>

@@ -6,6 +6,8 @@ export interface Message {
   speaker: string | null
   text: string
   edited?: boolean
+  /** 使用者手動獨立出來的旁白,不會被自動併回相鄰旁白 */
+  solo?: boolean
   /** 說話者是程式依上下文推測的 */
   guess?: boolean
   /** 推測且把握較低:畫面上才標「?」 */

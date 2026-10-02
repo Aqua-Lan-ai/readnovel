@@ -284,7 +284,6 @@ function parseParagraphRaw(para: string, ctx: ParseContext): Raw[] {
   return out
 }
 
-const MAX_MERGED_NARRATION = 600
 const isNarr = (m: Raw) => m.type === 'narration_short' || m.type === 'narration_long'
 
 /** 連續的旁白段落合併成一則,避免一段情境被切成一堆小訊息。 */
@@ -292,7 +291,7 @@ function mergeNarration(msgs: Raw[]): Raw[] {
   const out: Raw[] = []
   for (const m of msgs) {
     const last = out[out.length - 1]
-    if (last && isNarr(last) && isNarr(m) && !last.scene && !m.scene && last.text.length + m.text.length <= MAX_MERGED_NARRATION) {
+    if (last && isNarr(last) && isNarr(m) && !last.scene && !m.scene ) {
       const text = `${last.text}\n${m.text}`
       out[out.length - 1] = { ...last, text, type: narrationType(text) }
     } else out.push(m)
@@ -534,6 +533,26 @@ export function reinferFrom(msgs: Message[], ctx: ParseContext, from: number): n
     if (before[i] !== r.speaker) changed++
   })
   return changed
+}
+
+const isNarrMsg = (m: Message) => m.type === 'narration_short' || m.type === 'narration_long'
+
+/**
+ * 把「已解析」訊息裡連續的旁白併成一則(舊章節、手動改類型後、被字數上限切開的都適用)。
+ * 場景分隔線(＊ ● 等)與插圖會隔開旁白,不會被併入。回傳新陣列;沒有可併的就回傳原陣列。
+ */
+export function mergeAdjacentNarration(msgs: Message[]): Message[] {
+  const out: Message[] = []
+  let changed = false
+  for (const m of msgs) {
+    const last = out[out.length - 1]
+    if (last && isNarrMsg(last) && isNarrMsg(m) && !SCENE_BREAK.test(last.text) && !SCENE_BREAK.test(m.text) && !last.solo && !m.solo) {
+      const text = `${last.text}\n${m.text}`
+      out[out.length - 1] = { ...last, text, type: narrationType(text), edited: last.edited || m.edited }
+      changed = true
+    } else out.push(m)
+  }
+  return changed ? out : msgs
 }
 
 export function parseChapter(text: string, chapterIndex: number, ctx: ParseContext): Message[] {
