@@ -1,0 +1,9 @@
+node_modules/
+dist/
+.env
+*.local
+.DS_Store
+
+# 本機測試用的小說檔(有版權,不要上傳)
+temp/
+.claude/
