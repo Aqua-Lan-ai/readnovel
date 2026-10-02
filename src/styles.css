@@ -63,12 +63,11 @@ button { font: inherit; cursor: pointer; }
 /* 內心想法:雲朵 + 小圓點尾巴 */
 .bubble.thought { background: rgba(255,255,255,.62); border: 1.5px dashed rgba(60,70,90,.45); border-radius: 1.6em; font-style: italic; color: #2c3445; box-shadow: none; backdrop-filter: blur(2px); }
 .bubble.thought::before, .bubble.thought::after { content: ""; position: absolute; border-radius: 50%; background: rgba(255,255,255,.62); border: 1.5px solid rgba(60,70,90,.4); }
-.bubble.thought::before { width: 10px; height: 10px; left: -4px; bottom: -10px; }
-.bubble.thought::after { width: 6px; height: 6px; left: -10px; bottom: -18px; }
+.bubble.thought::before { width: 10px; height: 10px; left: -7px; top: 5px; }  /* 尾巴朝上往角色頭像方向:左側 ↖、右側 ↗ */
+.bubble.thought::after { width: 6px; height: 6px; left: -14px; top: -3px; }
 .row.right .bubble.thought { background: rgba(214,235,220,.72); }
-.row.right .bubble.thought::before { left: auto; right: -4px; }
-.row.right .bubble.thought::after { left: auto; right: -10px; }
-.row.left:has(.thought), .row.right:has(.thought) { margin-bottom: 14px; }
+.row.right .bubble.thought::before { left: auto; right: -7px; }
+.row.right .bubble.thought::after { left: auto; right: -14px; }
 
 /* 大喊:漫畫爆炸框(刺由 Bubble.tsx 的 SVG 依大小動態畫出) */
 .bubble.shout { position: relative; isolation: isolate; background: transparent; box-shadow: none; border-radius: 0; margin: 14px 12px; padding: .8em 1.2em; color: #161616; font-weight: 900; font-size: 1.15em; letter-spacing: .02em; overflow: visible; }
